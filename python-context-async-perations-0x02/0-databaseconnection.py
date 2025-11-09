@@ -1,11 +1,9 @@
-
 #!/usr/bin/env python3
 """
 Custom class-based context manager for database connections
 """
 
 import sqlite3
-import os
 
 class DatabaseConnection:
     """Custom context manager for SQLite database connections"""
@@ -19,11 +17,7 @@ class DatabaseConnection:
         """Setup connection when entering context"""
         self.connection = sqlite3.connect(self.db_name)
         self.cursor = self.connection.cursor()
-        
-        # Create sample table and data for demonstration
-        self._create_sample_data()
-        
-        return self.cursor
+        return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup when exiting context"""
@@ -35,19 +29,34 @@ class DatabaseConnection:
             else:
                 self.connection.commit()
             self.connection.close()
+        # Return False to propagate exceptions, True to suppress them
+        return False
     
-    def _create_sample_data(self):
-        """Create sample users table with data"""
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                age INTEGER NOT NULL,
-                email TEXT
-            )
-        ''')
-        
-        # Insert sample data
+    def execute_query(self, query, params=None):
+        """Execute a SQL query and return results"""
+        if params is None:
+            params = ()
+        self.cursor.execute(query, params)
+        return self.cursor.fetchall()
+
+def create_sample_database():
+    """Create sample database with users table and data"""
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    
+    # Create users table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            email TEXT
+        )
+    ''')
+    
+    # Insert sample data only if table is empty
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
         sample_users = [
             ('Alice Johnson', 28, 'alice@email.com'),
             ('Bob Smith', 32, 'bob@email.com'),
@@ -56,20 +65,30 @@ class DatabaseConnection:
             ('Eve Wilson', 35, 'eve@email.com')
         ]
         
-        self.cursor.execute("SELECT COUNT(*) FROM users")
-        if self.cursor.fetchone()[0] == 0:
-            self.cursor.executemany(
-                "INSERT INTO users (name, age, email) VALUES (?, ?, ?)",
-                sample_users
-            )
+        cursor.executemany(
+            "INSERT INTO users (name, age, email) VALUES (?, ?, ?)",
+            sample_users
+        )
+        print("Sample data inserted into users table")
+    
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
-    # Demonstrate usage of the context manager
-    with DatabaseConnection() as cursor:
-        cursor.execute("SELECT * FROM users")
-        results = cursor.fetchall()
+    # Create the sample database first
+    create_sample_database()
+    
+    # Use the context manager with the with statement
+    # Perform the query SELECT * FROM users and print results
+    print("Using DatabaseConnection context manager:")
+    print("=" * 50)
+    
+    with DatabaseConnection() as db:
+        results = db.execute_query("SELECT * FROM users")
         
         print("Users in database:")
         print("-" * 40)
         for row in results:
             print(f"ID: {row[0]}, Name: {row[1]}, Age: {row[2]}, Email: {row[3]}")
+    
+    print("\nContext manager successfully closed the database connection.")
