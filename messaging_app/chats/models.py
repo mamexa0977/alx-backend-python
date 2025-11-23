@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 import uuid
@@ -17,6 +16,9 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='guest')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Password field is inherited from AbstractUser, but we'll explicitly mention it
+    password = models.CharField(max_length=128)  # This matches Django's default password field
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
