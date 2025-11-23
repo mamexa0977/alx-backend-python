@@ -1,15 +1,15 @@
-from rest_framework import viewsets, permissions, filters, status
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['created_at']
-    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return Conversation.objects.filter(participants=self.request.user)
 
     def perform_create(self, serializer):
         conversation = serializer.save()
@@ -18,16 +18,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['sent_at']
-    ordering = ['-sent_at']
 
     def get_queryset(self):
-        queryset = Message.objects.all()
-        conversation_id = self.request.query_params.get('conversation')
-        if conversation_id:
-            queryset = queryset.filter(conversation__conversation_id=conversation_id)
-        return queryset
+        return Message.objects.filter(conversation__participants=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
