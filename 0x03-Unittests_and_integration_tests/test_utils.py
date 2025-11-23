@@ -88,6 +88,7 @@
 #             self.assertEqual(result2, 42)
 #             mock_method.assert_called_once()
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Unit tests for utils module
 """
