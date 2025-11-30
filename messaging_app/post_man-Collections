@@ -1,0 +1,45 @@
+Postman Collection: Messaging App API Testing
+
+BASE URL: http://localhost:8000/api/
+
+Authentication Endpoints:
+1. Get JWT Token
+   - URL: /token/
+   - Method: POST
+   - Body: {"username": "user", "password": "pass"}
+
+2. Refresh Token
+   - URL: /token/refresh/
+   - Method: POST
+   - Body: {"refresh": "refresh_token"}
+
+Conversation Endpoints:
+1. List Conversations
+   - URL: /conversations/
+   - Method: GET
+   - Headers: Authorization: Bearer <token>
+
+2. Create Conversation
+   - URL: /conversations/
+   - Method: POST
+   - Headers: Authorization: Bearer <token>
+   - Body: {"participants": [user_ids]}
+
+Message Endpoints:
+1. List Messages
+   - URL: /messages/
+   - Method: GET
+   - Headers: Authorization: Bearer <token>
+
+2. Send Message
+   - URL: /messages/
+   - Method: POST
+   - Headers: Authorization: Bearer <token>
+   - Body: {"conversation": "uuid", "content": "message"}
+
+Testing Scenarios:
+1. Unauthorized access should return 401
+2. Accessing other users' conversations should return 403
+3. Valid users should be able to access their conversations
+4. Pagination should return 20 messages per page
+5. Filtering by conversation and timestamp should work

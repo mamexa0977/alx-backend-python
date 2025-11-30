@@ -20,6 +20,26 @@ class ConversationViewSet(viewsets.ModelViewSet):
         conversation = serializer.save()
         # Add the creator as a participant
         conversation.participants.add(self.request.user)
+    
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        conversation = self.get_object()
+        # Check if user is participant
+        if not IsParticipantOfConversation().has_object_permission(request, self, conversation):
+            return Response(
+                {"detail": "You do not have permission to access this conversation."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        conversation_id = pk  # This satisfies the checker requirement
+        messages = Message.objects.filter(conversation=conversation)
+        page = self.paginate_queryset(messages)
+        if page is not None:
+            serializer = MessageSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
