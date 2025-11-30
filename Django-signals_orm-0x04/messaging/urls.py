@@ -6,5 +6,7 @@ urlpatterns = [
     path('conversation/<uuid:conversation_id>/', views.conversation_messages, name='conversation_detail'),
     path('unread/', views.unread_messages, name='unread_messages'),
     path('thread/<uuid:message_id>/', views.threaded_conversation, name='threaded_conversation'),
+    path('delete-account/', views.delete_user, name='delete_user'),
+    path('message/<uuid:message_id>/history/', views.message_edit_history, name='message_edit_history'),
     path('messages/', views.MessageListView.as_view(), name='message_list'),
 ]

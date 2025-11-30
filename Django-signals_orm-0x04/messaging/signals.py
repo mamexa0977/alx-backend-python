@@ -20,10 +20,11 @@ def log_message_history(sender, instance, **kwargs):
         try:
             original = Message.objects.get(pk=instance.pk)
             if original.content != instance.content:  # Content changed
-                # Create history record
+                # Create history record with edited_by field
                 MessageHistory.objects.create(
                     original_message=instance,
-                    old_content=original.content
+                    old_content=original.content,
+                    edited_by=instance.sender  # Set edited_by to the message sender
                 )
                 instance.edited = True
                 print(f"Message history logged for message {instance.id}")

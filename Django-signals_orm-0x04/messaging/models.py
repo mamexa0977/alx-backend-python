@@ -1,15 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
-
-class UnreadMessagesManager(models.Manager):
-    """Custom manager for unread messages"""
-    def get_queryset(self):
-        return super().get_queryset().filter(read=False)
-    
-    def for_user(self, user):
-        """Filter unread messages for specific user"""
-        return self.filter(receiver=user).only('id', 'content', 'timestamp', 'sender__username')
+from .managers import UnreadMessagesManager
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -43,6 +35,7 @@ class MessageHistory(models.Model):
     original_message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='history')
     old_content = models.TextField()
     edited_at = models.DateTimeField(auto_now_add=True)
+    edited_by = models.ForeignKey(User, on_delete=models.CASCADE)  # Added edited_by field
 
     def __str__(self):
         return f"History for message {self.original_message.id}"
