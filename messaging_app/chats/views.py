@@ -1,33 +1,43 @@
-from rest_framework import viewsets, permissions, status, filters
-from rest_framework.response import Response
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
-from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Conversation, Message, User
+from .serializers import ConversationSerializer, MessageSerializer, UserSerializer
+from .permissions import IsParticipantOfConversation, IsMessageParticipant, IsOwnerOrReadOnly
+from .pagination import MessagePagination
+from .filters import MessageFilter
 
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.OrderingFilter, filters.SearchFilter]
-    ordering_fields = ['created_at']
-    ordering = ['-created_at']
-    search_fields = ['participants__username']
-
+    permission_classes = [permissions.IsAuthenticated, IsParticipantOfConversation]
+    
     def get_queryset(self):
+        # Users can only see conversations they are part of
         return Conversation.objects.filter(participants=self.request.user)
-
+    
     def perform_create(self, serializer):
         conversation = serializer.save()
+        # Add the creator as a participant
         conversation.participants.add(self.request.user)
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['sent_at']
-    ordering = ['-sent_at']
-
+    permission_classes = [permissions.IsAuthenticated, IsMessageParticipant, IsOwnerOrReadOnly]
+    pagination_class = MessagePagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = MessageFilter
+    
     def get_queryset(self):
-        return Message.objects.filter(conversation__participants=self.request.user)
-
+        # Users can only see messages where they are sender or receiver
+        return Message.objects.filter(
+            conversation__participants=self.request.user
+        ).select_related('sender', 'receiver', 'conversation')
+    
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
